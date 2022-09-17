@@ -1,0 +1,221 @@
+<?php
+/*
+Plugin Name: Mi primer plugin
+Plugin URI: Http// Mi primer plugin.com
+Description: Este es mi primer plugin que va cambiar los titulos de cada entrada de un blog o categoria
+Version: 1.0
+Author: Alejandro Arango
+Author URI: Http://miurlpersonal.com
+License: GPL2
+License URI:  https://www.gnu.org/license/gpl-2.0.html
+Text Domain: miprimerplugin
+Domain Patch: /languages
+*/
+if( ! function_exists('mp_install') ) {
+    function mp_install(){
+    //Accion a ejecutar
+//    require_once 'activador.php';
+    }
+}
+
+if( ! class_exists('MP_Mi_Class') ) {
+    class  MP_Mi_Class {
+        
+    }
+}
+
+function mp_deactivation() {
+    // Accion a ejecutar
+    flush_rewrite_rules();
+}
+
+function mp_desinstall() {
+    // Borrar Tablas en la base de datos
+    // Quitar alguna configuraciones
+    // u Opciones 
+}
+
+register_activation_hook( __FILE__, 'mp_install' );
+register_deactivation_hook( __FILE__, 'mp_deactivation' );
+
+require_once plugin_dir_path(__FILE__) . 'lib/helpers.php';
+
+if( !function_exists('mp_options_page') ) {
+    
+    // Linea 1000
+    add_action('admin_menu', 'mp_options_page', 9);
+    
+    // Linea 5000
+    add_action('admin_menu', 'mp_options_page2', 5);
+    
+    function mp_options_page2() {
+        
+    }
+    
+    function mp_options_page() {
+    
+        $menus = [];
+        $submenus = [];
+
+        $menus[] = [
+            'PageTitle' => 'MP Pruebas',
+            'menuTitle' => 'MP Pruebas',
+            'capacibility' => 'manage_options',
+            'menuSlug' => 'mp_pruebas',
+            'functionName' => 'mp_pruebas_page_display',
+            'iconUrl' => plugin_dir_url(__FILE__) . 'img/sveacol-20-wp.svg',
+            'position' => 15,
+        ];
+
+          $submenus[] = [
+            'parentSlug' => 'mp_pruebas',
+            'PageTitle' => 'configuracion',
+            'menuTitle' => 'configuracion',
+            'capacibility' => 'manage_options',
+            'menuSlug' => 'config_mp_pruebas',
+            'functionName' => 'submenu1_mp_pruebas_page_display',
+        ];
+        
+        addMenusPages( $menus );
+        addSubmenusPage( $submenus );
+        
+    }
+    
+}
+
+if( ! function_exists( 'mp_pruebas_page_display' ) ) {
+
+    function mp_pruebas_page_display() {
+        
+        ?>
+
+        <?php if( current_user_can('manage_options') ) : ?>
+        <!-- HTML -->
+    
+        <div class="wrap">
+
+            <form action="" method="post">
+
+                <input type="text" placeholder="Texto">
+
+                <?php submit_button('Enviar'); ?>    
+                
+            </form>
+
+        </div>
+
+        <?php else: ?>
+
+        <p>
+            No tienes acceso a esta sección
+        </p>
+
+        <?php endif; ?>
+
+        <?php
+    
+     }
+    
+}
+
+if( ! function_exists( 'submenu1_mp_pruebas_page_display' ) ) {
+
+    function submenu1_mp_pruebas_page_display() {
+        
+        $prefijo = "mp_";
+        $id = 15;
+        
+        $clases = ["mp_durazno", 'mp_pera'];
+        $clases = apply_filters( 'mp_h1_class', $clases, $prefijo); 
+        $clases_output = '';
+        
+        foreach( $clases as $clase ) {
+        
+            $clases_output .= "$clase ";
+             
+        }
+        
+        $titulo = apply_filters( 'mp_change_title', 'Configuracion de MP Pruebas');
+        
+        ?>
+
+        <?php if( current_user_can('manage_options') ) : ?>
+        <!-- HTML -->
+       
+        <div class="wrap">
+            
+            <h1>class="<?php echo esc_attr(trim($clases_output)); ?>"><?php echo $titulo; ?></h1>
+
+            <form action="" method="post">
+
+                <input name="<?php echo $prefijo; ?>valor1" type="text" placeholder="Texto">
+                <br>
+                <?php do_action( 'mp_new_config_extend', $prefijo, $id); ?>
+                
+                <?php submit_button('Enviar'); ?>
+                
+            </form>
+
+        </div>
+
+        <?php else: ?>
+
+        <p>
+            No tienes acceso a esta sección
+        </p>
+
+        <?php endif; ?>
+
+        <?php
+    
+     }
+    
+}
+
+remove_action('admin_menu', 'mp_options_page', 9 );
+
+add_filter( 'the_title', 'mp_filtro_titulo', 10 , 2 );
+
+function mp_filtro_titulo( $title, $post_id ) {
+    
+    $vocales = [ 'a','e','i','o','u','A','E','I','O','U' ];
+    $title = str_replace( $vocales, '', $title );
+    
+    return $title;
+    
+}
+
+add_filter( 'the_content', 'mp_filtro_contenido' );
+
+function mp_filtro_contenido( $contenido ) {
+    
+    $vocales = [ 'a','e','i','o','u','A','E','I','O','U' ];
+    $contenido = str_replace( $vocales, '', $contenido );
+    
+    if( is_singular('post') && has_post_thumbnail() ) {
+        
+        $thumbnail = get_the_post_thumbnail();
+        $contenido = $contenido . $thumbnail;
+    }
+    
+    return $contenido;
+    
+}
+
+add_filter( 'body_class', function($classes) {
+    
+    if( !is_admin() ) {
+        
+        if( in_array( 'wp-embed-responsive', $classes ) ) {
+            
+            $indice = array_search( 'wp-embed-responsive', $classes);
+            unset( $classes [$indice]);
+        }
+        
+        $nuevas_clases = array( 'mi-nueva-clase', 'otra-clase');
+        return array_merge( $classes, $nuevas_clases);
+    
+    }
+    
+    
+} );
